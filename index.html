@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title> Sign Up Page </title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+</head>
+
+
+<body>
+    <div class="jumbotron">
+        <h1> Sign Up </h1>
+    </div>
+    <div class="row">
+    <div class="col">
+
+    </div>
+    <div class="col-md-6">
+        <form id="signupForm" method="GET" action="welcome.html">
+            <div class="form-group ">
+                <label for="fName">First Name:</label>
+                <input type="text" class="form-control" name="fName" id="fname"><br>
+                <label for="lName">Last Name:</label>
+                <input type="text" class="form-control" name="lName" id="lName"><br>
+                <label for="gender">Gender:</label><br>
+                <div class="form-check form-check-inline">
+                    <input type="radio" class="form-check-input" name="gender" value="m" id="genderMale">
+                    <label class="form-check-label" for="genderMale">Male</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="radio" class="form-check-input" name="gender" value="f" id="genderFemale">
+                    <label class="form-check-label" for="genderFemale">Female</label>
+                </div>
+                <br><br>
+
+                <label for="zip">Zip Code:</label>
+                <input type="text" class="form-control" name="zip" id="zip"><br>
+                <label for="city">City:</label><span id="city"></span><br>
+                <label for="latitude">Latitude:</label><span id="latitude"></span><br>
+                <label for="longitude">Longitude:</label><span id="longitude"></span><br><br>
+                <label for="state">State:</label>
+                <select id="state" class="form-control" name="state">
+                    <option value="">Select One</option>
+                </select><br />
+
+                <label for="county">Select County:</label><select id="county" class="form-control"></select><br><br>
+
+                <label for="username">Desired Username:</label><input class="form-control" type="text" id="username" name="username"><br>
+                <span id="usernameError"></span><br>
+                <label for="password">Password:</label><input class="form-control" type="password" id="password" name="password"><br>
+                <label for="passwordAgainError">Password Again:</label><input class="form-control" type="password" id="passwordAgain"><br>
+                <span id="passwordAgainError"></span> <br /><br>
+
+                <input type="submit" value="Sign Up!">
+            </div>
+        </form>
+    </div>
+    <div class="col">
+
+    </div>
+</div>
+    <script>
+
+        var usernameAvailable = false;
+
+        $(document).ready(function(){
+            $.ajax({
+                method: "GET",
+                url: "http://cst336.herokuapp.com/projects/api/state_abbrAPI.php",
+                dataType: "json",
+                data: { "zip": $("#zip").val() },
+                success: function (result, status) {
+                    result.forEach(state => {
+                        $("#state").append(`<option value="` + state.usps + `">` +state.state + "</option>")
+                        //<option value="ca">California</option>
+                    });
+                    
+                    $("#county").html("<option> Select One </option>")
+                    for (let i = 0; i < result.length; i++) {
+                        $("#county").append("<option>" + result[i].county + "</option>");
+
+
+                    }
+                }
+
+            })
+            
+        })
+
+
+        $("#zip").on("change", function () {
+            $.ajax({
+                method: "GET",
+                url: "http://cst336.herokuapp.com/projects/api/cityInfoAPI.php",
+                dataType: "json",
+                data: { "zip": $("#zip").val() },
+                success: function (result, status) {
+
+                    //alert(result);
+                    $("#city").html(result.city);
+                    $("#longitude").html(result.longitude);
+                    $("#latitude").html(result.latitude);
+                }
+
+            });
+        });
+
+        $("#state").on("change", function () {
+            //alert($("#state").val());
+
+            $.ajax({
+                method: "GET",
+                url: "http://cst336.herokuapp.com/projects/api/countyListAPI.php",
+                dataType: "json",
+                data: { "state": $("#state").val() },
+                success: function (result, status) {
+                    //alert(result[0].county);
+                    $("#county").html("<option> Select One </option>")
+                    for (let i = 0; i < result.length; i++) {
+                        $("#county").append("<option>" + result[i].county + "</option>");
+
+
+                    }
+
+                }
+            })
+        })
+        $("#username").change(function () {
+            // alert($("#username").val());
+
+            $.ajax({
+                method: "GET",
+                url: "https://cst336.herokuapp.com/projects/api/usernamesAPI.php",
+                dataType: "json",
+                data: { "username": $("#username").val() },
+                success: function (result, status) {
+                    if (result.available) {
+                        $("#usernameError").html("Username is available");
+                        $("#usernameError").css("color", "green");
+                        usernameAvailable = true;
+                    } else {
+                        $("#usernameError").html("Username is unavaialable!");
+                        $("#usernameError").css("color", "red");
+                        usernameAvailable = false;
+                    }
+                }
+            })
+        });//username
+
+        $("#signupForm").on("submit", function (e) {
+            if (!isFormValid()) {
+                e.preventDefault();
+            }
+        });
+
+        function isFormValid() {
+            isValid = true;
+            if (!usernameAvailable) {
+                isValid = false;
+            }
+
+            if ($("#username").val().length == 0) {
+                isValid = false;
+                $("#usernameError").html("Username is required");
+            }
+
+            if ($("#password").val() != $("#passwordAgain").val()) {
+                $("#passwordAgainError").html("Password Mismatch");
+                isValid = false;
+            }
+
+            if ($("#password").val().length < 6 ){
+                isValid = false;
+                $("#passwordAgainError").html("Password Too Short");
+                
+            }
+
+            return isValid;
+        }
+
+
+
+
+        /*
+               alert($("#zip").val());
+            */
+    </script>
+
+</body>
+
+</html>
